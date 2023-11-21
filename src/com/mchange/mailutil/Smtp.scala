@@ -28,6 +28,8 @@ object Smtp:
     val Password = "mail.smtp.password" // this is NOT a standard javax.mail property AFAIK
     val StartTlsEnable = "mail.smtp.starttls.enable"
     val Debug = "mail.smtp.debug"
+    object SyspropOnly:
+      val Properties = "mail.smtp.properties"
   object Port:
     // see e.g. https://sendgrid.com/blog/whats-the-difference-between-ports-465-and-587/
     val Vanilla     = 25
@@ -50,7 +52,7 @@ object Smtp:
     lazy given TrySmtpContext : Try[Context] = Try( Smtp.Context.Default )
     lazy given Default : Context =
       val props =
-        sys.env.get(Env.Properties) match
+        (sys.props.get(Prop.SyspropOnly.Properties) orElse sys.env.get(Env.Properties)) match
           case Some( pathStr ) =>
             val path = os.Path(pathStr)
             val tryProps = Try:
@@ -181,7 +183,7 @@ object Smtp:
     * Be sure to do so, and then `msg.saveChanges()` before sending!
     */
   def _composeSimplePlaintext(
-    plainText : String,
+    plaintext : String,
     subject   : String,
     from      : Seq[Address],
     to        : Seq[Address],
@@ -190,7 +192,7 @@ object Smtp:
     replyTo   : Seq[Address],
   )( using context : Smtp.Context ) : MimeMessage =
     val msg = new MimeMessage(context.session)
-    msg.setContent(plainText, "text/plain")
+    msg.setContent(plaintext, "text/plain")
     setSubjectFromToCcBccReplyTo( msg, subject, from, to, cc, bcc, replyTo )
     msg.saveChanges()
     msg
@@ -201,7 +203,7 @@ object Smtp:
     * Be sure to do so, and then `msg.saveChanges()` before sending!
     */
   def composeSimplePlaintext[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
-    plainText : String,
+    plaintext : String,
     subject   : String,
     from      : A,
     to        : B,
@@ -210,7 +212,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address]
   )( using context : Smtp.Context ) : MimeMessage =
     _composeSimplePlaintext(
-      plainText,
+      plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from),
       summon[AddressesRep[B]].toAddresses(to),
@@ -221,7 +223,7 @@ object Smtp:
   end composeSimplePlaintext
 
   def _sendSimplePlaintext(
-    plainText : String,
+    plaintext : String,
     subject   : String,
     from      : Seq[Address],
     to        : Seq[Address],
@@ -229,14 +231,14 @@ object Smtp:
     bcc       : Seq[Address],
     replyTo   : Seq[Address]
   )( using context : Smtp.Context ) : Unit =
-    val msg = _composeSimplePlaintext( plainText, subject, from, to, cc, bcc, replyTo )
+    val msg = _composeSimplePlaintext( plaintext, subject, from, to, cc, bcc, replyTo )
     msg.setSentDate(new Date())
     msg.saveChanges()
     context.sendMessage(msg)
   end _sendSimplePlaintext
 
   def sendSimplePlaintext[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
-    plainText : String,
+    plaintext : String,
     subject   : String,
     from      : A,
     to        : B,
@@ -245,7 +247,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address]
   )( using context : Smtp.Context ) : Unit =
     _sendSimplePlaintext(
-      plainText,
+      plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from),
       summon[AddressesRep[B]].toAddresses(to),
@@ -260,8 +262,8 @@ object Smtp:
     * Be sure to do so, and then `msg.saveChanges()` before sending!
     */
   def _composeSimpleHtmlPlaintextAlternative(
-    htmlText  : String,
-    plainText : String,
+    html      : String,
+    plaintext : String,
     subject   : String,
     from      : Seq[Address],
     to        : Seq[Address],
@@ -272,14 +274,14 @@ object Smtp:
     val msg = new MimeMessage(context.session)
     val htmlAlternative =
       val tmp = new MimeBodyPart()
-      tmp.setContent(htmlText, "text/html")
+      tmp.setContent(html, "text/html")
       tmp
-    val plainTextAlternative =
+    val plaintextAlternative =
       val tmp = new MimeBodyPart()
-      tmp.setContent(plainText, "text/plain")
+      tmp.setContent(plaintext, "text/plain")
       tmp
     // last entry is highest priority!
-    val multipart = new MimeMultipart("alternative", plainTextAlternative, htmlAlternative)
+    val multipart = new MimeMultipart("alternative", plaintextAlternative, htmlAlternative)
     msg.setContent(multipart)
     setSubjectFromToCcBccReplyTo( msg, subject, from, to, cc, bcc, replyTo )
     msg.saveChanges()
@@ -291,8 +293,8 @@ object Smtp:
     * Be sure to do so, and then `msg.saveChanges()` before sending!
     */
   def composeSimpleHtmlPlaintextAlternative[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
-    htmlText  : String,
-    plainText : String,
+    html      : String,
+    plaintext : String,
     subject   : String,
     from      : A,
     to        : B,
@@ -301,8 +303,8 @@ object Smtp:
     replyTo   : E = Seq.empty[Address]
   )( using context : Smtp.Context ) : MimeMessage =
     _composeSimpleHtmlPlaintextAlternative(
-      htmlText,
-      plainText,
+      html,
+      plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from),
       summon[AddressesRep[B]].toAddresses(to),
@@ -313,8 +315,8 @@ object Smtp:
   end composeSimpleHtmlPlaintextAlternative 
 
   def _sendSimpleHtmlPlaintextAlternative(
-    htmlText  : String,
-    plainText : String,
+    html      : String,
+    plaintext : String,
     subject   : String,
     from      : Seq[Address],
     to        : Seq[Address],
@@ -322,15 +324,15 @@ object Smtp:
     bcc       : Seq[Address],
     replyTo   : Seq[Address],
   )( using context : Smtp.Context ) : Unit =
-    val msg = _composeSimpleHtmlPlaintextAlternative( htmlText, plainText, subject, from, to, cc, bcc, replyTo )
+    val msg = _composeSimpleHtmlPlaintextAlternative( html, plaintext, subject, from, to, cc, bcc, replyTo )
     msg.setSentDate(new Date())
     msg.saveChanges()
     context.sendMessage(msg)
   end _sendSimpleHtmlPlaintextAlternative
 
   def sendSimpleHtmlPlaintextAlternative[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
-    htmlText  : String,
-    plainText : String,
+    html      : String,
+    plaintext : String,
     subject   : String,
     from      : A,
     to        : B,
@@ -339,8 +341,8 @@ object Smtp:
     replyTo   : E = Seq.empty[Address]
   )( using context : Smtp.Context ) : Unit =
     _sendSimpleHtmlPlaintextAlternative(
-      htmlText,
-      plainText,
+      html,
+      plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from),
       summon[AddressesRep[B]].toAddresses(to),
