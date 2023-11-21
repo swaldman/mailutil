@@ -41,7 +41,7 @@ any acceptable format. So, for example,
 
 * In addition to `from` and `to`, you can provide `cc`, `bcc`, and `replyTo`
 
-## html mail
+## HTML mail
 
 It's easy to send self-contained HTML mail.
 
