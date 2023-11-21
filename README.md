@@ -99,6 +99,8 @@ def customSendMail()( using Smtp.Context ) =
 
 ## Configuration
 
+### Via a properties file
+
 The recommended configuration strategy is to define a Java-standard properties file,
 and specify its absolute location using either
 
@@ -120,6 +122,8 @@ mail.smtp.starttls.enable=???  # Usually omit, we'll figure it out from the port
 mail.smtp.debug=???            # Log extra debugging information
 ```
 
+### On the command line, or in the environment
+
 If you prefer to live dangerously, any or all of these properties can also be provided
 directly as system properties, or in the following environment variables:
 
@@ -131,6 +135,23 @@ SMTP_PASSWORD=???
 SMTP_STARTTLS=???
 SMTP_START_TLS=??? # Same as SMTP_STARTTLS, just an alternative form
 SMTP_DEBUG=???
+```
+
+### In code
+
+You can also configure your SMTP provder directly in code:
+
+```scala
+val smtpAuth = Smtp.Auth("smtpuser", "supersecretpassword") // better to fetch the password from somewhere than hardcode it!
+
+given Smtp.Context(
+  host = ???, // String
+  port = ???, // Int
+  auth = smtpAuth,
+  startTls = ???,
+  debug = ???
+)
+Smtp.sendSimplePlaintext( contents, subject = "So exciting!", from = "swaldman@mchange.com", to = "you@reader.org" )
 ```
 
 ---
