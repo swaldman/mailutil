@@ -147,7 +147,7 @@ val smtpAuth = Smtp.Auth("smtpuser", "supersecretpassword") // better to fetch t
 given Smtp.Context(
   host = ???, // String
   port = ???, // Int
-  auth = smtpAuth,
+  auth = Some( smtpAuth ),
   startTls = ???,
   debug = ???
 )
