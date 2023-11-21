@@ -94,7 +94,7 @@ def customSendMail()( using Smtp.Context ) =
   // do custom stuff
   msg.setSentDate(new Date())
   msg.saveChanges()
-  ctx.sendMessage(msg)
+  ctx.sendMessage(msg) // use this send message to inherit authentication / configuration
 ```
 
 ## Configuration
