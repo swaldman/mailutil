@@ -10,6 +10,8 @@ html-with-plaintext-alternative email.
 Putting aside [configuration](#configuration), sending a plaintext e-mail is just...
 
 ```scala
+//> using dep "com.mchange::mailutil:0.0.1"
+
 import com.mchange.mailutil.Smtp
 
 val contents = "This is some really exciting text here."
@@ -52,6 +54,8 @@ You will usually want to include CSS inline via a `<style> ... </style>` section
 For now, a plaintext alternative is required.
 
 ```scala
+//> using dep "com.mchange::mailutil:0.0.1"
+
 import com.mchange.mailutil.Smtp
 
 val plaintext = "This is some really exciting text here."
