@@ -20,6 +20,8 @@ Smtp.sendSimplePlaintext( contents, subject = "So exciting!", from = "swaldman@m
 
 That's it!
 
+(But you really do have to have [configured](#configuration) SMTP first.)
+
 ## Flexible addressing
 
 * Wherever you can write an e-mail address like `you@reader.org`, you can also include a display name part, so
