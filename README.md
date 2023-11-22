@@ -148,8 +148,8 @@ given Smtp.Context(
   host = ???, // String
   port = ???, // Int
   auth = Some( smtpAuth ),
-  startTls = ???,
-  debug = ???
+  startTls = ???, // boolean
+  debug = ??? // boolean
 )
 Smtp.sendSimplePlaintext( contents, subject = "So exciting!", from = "swaldman@mchange.com", to = "you@reader.org" )
 ```
