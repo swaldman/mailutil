@@ -127,7 +127,7 @@ mail.smtp.debug=???            # Log extra debugging information
 ### On the command line, or in the environment
 
 If you prefer to live dangerously, any or all of these properties can also be provided
-directly as system properties, or in the following environment variables:
+directly as system properties, or via the following environment variables:
 
 ```plaintext
 SMTP_HOST=???
