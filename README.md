@@ -67,7 +67,7 @@ val html =
      |    <title>So exciting!</title>
      |    <style>
      |      body {
-     |        background-color: black
+     |        background-color: black;
      |        color: white;
      |      }
      |      h1 {
