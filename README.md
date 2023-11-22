@@ -25,7 +25,7 @@ That's it!
 ## Flexible addressing
 
 * Wherever you can write an e-mail address like `you@reader.org`, you can also include a display name part, so
-`Very Special You <you@reader.org>` would be fine, and many mail clients will display `Very Special You` as
+`You <you@reader.org>` would be fine, and many mail clients will display `You` as
 the `to` address.
 
 * Wherever you can write an e-mail address, you can write a comma-separated list of e-mail addresses, in
@@ -88,6 +88,8 @@ Smtp.sendSimpleHtmlPlaintextAlternative( html = html, plaintext = plaintext, sub
 Once [configured](#configuration), you can use this library just for easy access to the raw jakarta-mail API:
 
 ```scala
+import java.util.Date
+import jakarta.mail.internet.MimeMessage
 import com.mchange.mailutil.Smtp
 
 def customSendMail()( using Smtp.Context ) =
@@ -147,16 +149,24 @@ You can also configure your SMTP provder directly in code:
 val smtpAuth = Smtp.Auth("smtpuser", "supersecretpassword") // better to fetch the password from somewhere than hardcode it!
 
 given Smtp.Context(
-  host = ???, // String
-  port = ???, // Int
-  auth = Some( smtpAuth ),
+  host     = ???, // String
+  port     = ???, // Int
+  auth     = Some( smtpAuth ),
   startTls = ???, // boolean
-  debug = ??? // boolean
+  debug    = ??? // boolean
 )
 Smtp.sendSimplePlaintext( contents, subject = "So exciting!", from = "swaldman@mchange.com", to = "you@reader.org" )
 ```
 
----
+### Known shortcomings
 
-That's all for now!
+You can drop into the [Jakarta mail API](https://jakarta.ee/specifications/mail/2.0/apidocs/jakarta.mail/module-summary.html)
+and do anything. But there is no clean API or conveniences for mail other than simple plaintext or HTML / plaintext
+alternative. Attachments and embedded resources (like images) are not really supported.
+
+It'd be nice to develop a general, clean Scala datastructure to model mail more generally, and make
+a convenience method which sends that datastructure.
+
+Maybe someday.
+
 
