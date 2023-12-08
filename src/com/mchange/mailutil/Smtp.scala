@@ -11,6 +11,15 @@ import scala.io.Codec
 import scala.collection.immutable
 
 object Smtp:
+  private def check( strict : Boolean )( addresses : Seq[Address] ) : Seq[Address] =
+    if strict then
+      try
+        addresses.foreach( a => a.toInternetAddress.validate() )
+      catch
+        case ae : AddressException =>
+          throw new SmtpAddressParseFailed( ae.getMessage(), ae )
+    addresses
+
   object Env:
     val Host = "SMTP_HOST"
     val Port = "SMTP_PORT"
@@ -37,9 +46,10 @@ object Smtp:
     val StartTls    = 587
   object Address:
     def fromInternetAddress( iaddress : InternetAddress ) : Address = Address( iaddress.getAddress(), Option(iaddress.getPersonal()) )
-    def parseCommaSeparated( line : String ) : Seq[Address] = immutable.ArraySeq.unsafeWrapArray( InternetAddress.parse(line).map( fromInternetAddress ) )
-    def parseSingle( fullAddress : String ) : Address =
-      val out = parseCommaSeparated( fullAddress )
+    def parseCommaSeparated( line : String, strict : Boolean = true ) : Seq[Address] =
+      check(strict)( immutable.ArraySeq.unsafeWrapArray( InternetAddress.parse(line).map( fromInternetAddress ) ) )
+    def parseSingle( fullAddress : String, strict : Boolean = true ) : Address =
+      val out = parseCommaSeparated( fullAddress, strict )
       out.size match
         case 0 => throw new SmtpAddressParseFailed("Expected to parse one valid SMTP address, none found.")
         case 1 => out.head
@@ -147,27 +157,18 @@ object Smtp:
       this.auth.fold(sendUnauthenticated(msg))(auth => sendAuthenticated(msg,auth))
   end Context
   object AddressesRep:
-    private def check( strict : Boolean )( addresses : Seq[Address] ) : Seq[Address] =
-      if strict then
-        try
-          addresses.foreach( a => a.toInternetAddress.validate() )
-        catch
-          case ae : AddressException =>
-            throw new SmtpAddressParseFailed( ae.getMessage(), ae )
-      addresses
-
     given AddressesRep[String] with
       def toAddresses( src : String, strict : Boolean ) : Seq[Address] =
-        check(strict)( if src.isEmpty then Seq.empty else Address.parseCommaSeparated(src) )
+        if src.isEmpty then Seq.empty else Address.parseCommaSeparated(src, strict)
     given AddressesRep[Address] with
       def toAddresses( src : Address, strict : Boolean ) : Seq[Address] =
         check(strict)( Seq(src) )
     given AddressesRep[Seq[Address]] with
       def toAddresses( src : Seq[Address], strict : Boolean ) : Seq[Address] =
         check(strict)( src )
-    given AddressesRepSeqString : AddressesRep[Seq[String]] with // if left anonymous, generated name conflicted with Seq[Address] instance
+    given AddressesRepSeqString : AddressesRep[Seq[String]] with // named, given if left anonymous, generated name conflicted with Seq[Address] instance
       def toAddresses( src : Seq[String], strict : Boolean ) : Seq[Address] =
-        check(strict)( src.flatMap( Address.parseCommaSeparated ) )
+        src.flatMap( s => Address.parseCommaSeparated(s, strict) )
   trait AddressesRep[A]:
     def toAddresses( src : A, strict : Boolean ) : Seq[Address]
   end AddressesRep
