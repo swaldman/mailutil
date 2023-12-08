@@ -45,7 +45,7 @@ object Smtp:
         case 1 => out.head
         case n => throw new SmtpAddressParseFailed(s"Expected to parse one valid SMTP address, ${n} found.")
   case class Address( email : String, displayName : Option[String] = None, codec : Codec = Codec.UTF8):
-    def toInternetAddress = new InternetAddress( email, displayName.getOrElse(null), codec.charSet.name() )
+    lazy val toInternetAddress = new InternetAddress( email, displayName.getOrElse(null), codec.charSet.name() )
   case class Auth( user : String, password : String ) extends Authenticator:
     override def getPasswordAuthentication() : PasswordAuthentication = new PasswordAuthentication(user, password)
   object Context:
@@ -147,16 +147,29 @@ object Smtp:
       this.auth.fold(sendUnauthenticated(msg))(auth => sendAuthenticated(msg,auth))
   end Context
   object AddressesRep:
+    private def check( strict : Boolean )( addresses : Seq[Address] ) : Seq[Address] =
+      if strict then
+        try
+          addresses.foreach( a => a.toInternetAddress.validate() )
+        catch
+          case ae : AddressException =>
+            throw new SmtpAddressParseFailed( ae.getMessage(), ae )
+      addresses
+
     given AddressesRep[String] with
-      def toAddresses( src : String ) : Seq[Address] = if src.isEmpty then Seq.empty else Address.parseCommaSeparated(src)
+      def toAddresses( src : String, strict : Boolean ) : Seq[Address] =
+        check(strict)( if src.isEmpty then Seq.empty else Address.parseCommaSeparated(src) )
     given AddressesRep[Address] with
-      def toAddresses( src : Address ) : Seq[Address] = Seq(src)
+      def toAddresses( src : Address, strict : Boolean ) : Seq[Address] =
+        check(strict)( Seq(src) )
     given AddressesRep[Seq[Address]] with
-      def toAddresses( src : Seq[Address] ) : Seq[Address] = src
+      def toAddresses( src : Seq[Address], strict : Boolean ) : Seq[Address] =
+        check(strict)( src )
     given AddressesRepSeqString : AddressesRep[Seq[String]] with // if left anonymous, generated name conflicted with Seq[Address] instance
-      def toAddresses( src : Seq[String] ) : Seq[Address] = src.flatMap( Address.parseCommaSeparated )
+      def toAddresses( src : Seq[String], strict : Boolean ) : Seq[Address] =
+        check(strict)( src.flatMap( Address.parseCommaSeparated ) )
   trait AddressesRep[A]:
-    def toAddresses( src : A ) : Seq[Address]
+    def toAddresses( src : A, strict : Boolean ) : Seq[Address]
   end AddressesRep
   
   private def setSubjectFromToCcBccReplyTo(
@@ -189,7 +202,7 @@ object Smtp:
     to        : Seq[Address],
     cc        : Seq[Address],
     bcc       : Seq[Address],
-    replyTo   : Seq[Address],
+    replyTo   : Seq[Address]
   )( using context : Smtp.Context ) : MimeMessage =
     val msg = new MimeMessage(context.session)
     msg.setContent(plaintext, "text/plain")
@@ -209,16 +222,17 @@ object Smtp:
     to        : B,
     cc        : C = Seq.empty[Address],
     bcc       : D = Seq.empty[Address],
-    replyTo   : E = Seq.empty[Address]
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
   )( using context : Smtp.Context ) : MimeMessage =
     _composeSimplePlaintext(
       plaintext,
       subject,
-      summon[AddressesRep[A]].toAddresses(from),
-      summon[AddressesRep[B]].toAddresses(to),
-      summon[AddressesRep[C]].toAddresses(cc),
-      summon[AddressesRep[D]].toAddresses(bcc),
-      summon[AddressesRep[E]].toAddresses(replyTo),
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict),
     )
   end composeSimplePlaintext
 
@@ -244,16 +258,17 @@ object Smtp:
     to        : B,
     cc        : C = Seq.empty[Address],
     bcc       : D = Seq.empty[Address],
-    replyTo   : E = Seq.empty[Address]
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
   )( using context : Smtp.Context ) : Unit =
     _sendSimplePlaintext(
       plaintext,
       subject,
-      summon[AddressesRep[A]].toAddresses(from),
-      summon[AddressesRep[B]].toAddresses(to),
-      summon[AddressesRep[C]].toAddresses(cc),
-      summon[AddressesRep[D]].toAddresses(bcc),
-      summon[AddressesRep[E]].toAddresses(replyTo)
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict)
     )
   end sendSimplePlaintext
 
@@ -300,17 +315,18 @@ object Smtp:
     to        : B,
     cc        : C = Seq.empty[Address],
     bcc       : D = Seq.empty[Address],
-    replyTo   : E = Seq.empty[Address]
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
   )( using context : Smtp.Context ) : MimeMessage =
     _composeSimpleHtmlPlaintextAlternative(
       html,
       plaintext,
       subject,
-      summon[AddressesRep[A]].toAddresses(from),
-      summon[AddressesRep[B]].toAddresses(to),
-      summon[AddressesRep[C]].toAddresses(cc),
-      summon[AddressesRep[D]].toAddresses(bcc),
-      summon[AddressesRep[E]].toAddresses(replyTo)
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict)
     )
   end composeSimpleHtmlPlaintextAlternative 
 
@@ -338,16 +354,17 @@ object Smtp:
     to        : B,
     cc        : C = Seq.empty[Address],
     bcc       : D = Seq.empty[Address],
-    replyTo   : E = Seq.empty[Address]
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
   )( using context : Smtp.Context ) : Unit =
     _sendSimpleHtmlPlaintextAlternative(
       html,
       plaintext,
       subject,
-      summon[AddressesRep[A]].toAddresses(from),
-      summon[AddressesRep[B]].toAddresses(to),
-      summon[AddressesRep[C]].toAddresses(cc),
-      summon[AddressesRep[D]].toAddresses(bcc),
-      summon[AddressesRep[E]].toAddresses(replyTo)
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict)
     )
   end sendSimpleHtmlPlaintextAlternative 
