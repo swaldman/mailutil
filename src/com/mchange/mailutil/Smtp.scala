@@ -196,8 +196,8 @@ object Smtp:
     * Does not set `msg.setSentDate(...)`.
     * Be sure to do so, and then `msg.saveChanges()` before sending!
     */
-  def _composeSimplePlaintext(
-    plaintext : String,
+  def _composeSimple( mimeType : String )(
+    contents  : Object,
     subject   : String,
     from      : Seq[Address],
     to        : Seq[Address],
@@ -206,11 +206,72 @@ object Smtp:
     replyTo   : Seq[Address]
   )( using context : Smtp.Context ) : MimeMessage =
     val msg = new MimeMessage(context.session)
-    msg.setContent(plaintext, "text/plain")
+    msg.setContent(contents, mimeType)
     setSubjectFromToCcBccReplyTo( msg, subject, from, to, cc, bcc, replyTo )
     msg.saveChanges()
     msg
-  end _composeSimplePlaintext
+  end _composeSimple
+
+  /**
+    * Does not set `msg.setSentDate(...)`.
+    * Be sure to do so, and then `msg.saveChanges()` before sending!
+    */
+  def composeSimple[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep]( mimeType : String )(
+    contents  : Object,
+    subject   : String,
+    from      : A,
+    to        : B,
+    cc        : C = Seq.empty[Address],
+    bcc       : D = Seq.empty[Address],
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
+  )( using context : Smtp.Context ) : MimeMessage =
+    _composeSimple( mimeType )(
+      contents,
+      subject,
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict),
+    )
+  end composeSimple
+
+  def _sendSimple( mimeType : String )(
+    contents  : Object,
+    subject   : String,
+    from      : Seq[Address],
+    to        : Seq[Address],
+    cc        : Seq[Address],
+    bcc       : Seq[Address],
+    replyTo   : Seq[Address]
+  )( using context : Smtp.Context ) : Unit =
+    val msg = _composeSimple( mimeType )( contents, subject, from, to, cc, bcc, replyTo )
+    msg.setSentDate(new Date())
+    msg.saveChanges()
+    context.sendMessage(msg)
+  end _sendSimple
+
+  def sendSimple[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep]( mimeType : String )(
+    contents  : Object,
+    subject   : String,
+    from      : A,
+    to        : B,
+    cc        : C = Seq.empty[Address],
+    bcc       : D = Seq.empty[Address],
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
+  )( using context : Smtp.Context ) : Unit =
+    _sendSimple( mimeType )(
+      contents,
+      subject,
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict)
+    )
+  end sendSimple
 
   /**
     * Does not set `msg.setSentDate(...)`.
@@ -226,7 +287,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address],
     strict    : Boolean = true
   )( using context : Smtp.Context ) : MimeMessage =
-    _composeSimplePlaintext(
+    _composeSimple("text/plain")(
       plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from, strict),
@@ -236,21 +297,6 @@ object Smtp:
       summon[AddressesRep[E]].toAddresses(replyTo, strict),
     )
   end composeSimplePlaintext
-
-  def _sendSimplePlaintext(
-    plaintext : String,
-    subject   : String,
-    from      : Seq[Address],
-    to        : Seq[Address],
-    cc        : Seq[Address],
-    bcc       : Seq[Address],
-    replyTo   : Seq[Address]
-  )( using context : Smtp.Context ) : Unit =
-    val msg = _composeSimplePlaintext( plaintext, subject, from, to, cc, bcc, replyTo )
-    msg.setSentDate(new Date())
-    msg.saveChanges()
-    context.sendMessage(msg)
-  end _sendSimplePlaintext
 
   def sendSimplePlaintext[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
     plaintext : String,
@@ -262,7 +308,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address],
     strict    : Boolean = true
   )( using context : Smtp.Context ) : Unit =
-    _sendSimplePlaintext(
+    _sendSimple("text/plain")(
       plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from, strict),
@@ -272,6 +318,52 @@ object Smtp:
       summon[AddressesRep[E]].toAddresses(replyTo, strict)
     )
   end sendSimplePlaintext
+
+  /**
+    * Does not set `msg.setSentDate(...)`.
+    * Be sure to do so, and then `msg.saveChanges()` before sending!
+    */
+  def composeSimpleHtmlOnly[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
+    html      : String,
+    subject   : String,
+    from      : A,
+    to        : B,
+    cc        : C = Seq.empty[Address],
+    bcc       : D = Seq.empty[Address],
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
+  )( using context : Smtp.Context ) : MimeMessage =
+    _composeSimple("text/html")(
+      html,
+      subject,
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict),
+    )
+  end composeSimpleHtmlOnly
+
+  def sendSimpleHtmlOnly[A:AddressesRep,B:AddressesRep,C:AddressesRep,D:AddressesRep,E:AddressesRep](
+    html      : String,
+    subject   : String,
+    from      : A,
+    to        : B,
+    cc        : C = Seq.empty[Address],
+    bcc       : D = Seq.empty[Address],
+    replyTo   : E = Seq.empty[Address],
+    strict    : Boolean = true
+  )( using context : Smtp.Context ) : Unit =
+    _sendSimple("text/html")(
+      html,
+      subject,
+      summon[AddressesRep[A]].toAddresses(from, strict),
+      summon[AddressesRep[B]].toAddresses(to, strict),
+      summon[AddressesRep[C]].toAddresses(cc, strict),
+      summon[AddressesRep[D]].toAddresses(bcc, strict),
+      summon[AddressesRep[E]].toAddresses(replyTo, strict)
+    )
+  end sendSimpleHtmlOnly
 
   /**
     * Does not set `msg.setSentDate(...)`.

@@ -53,7 +53,7 @@ may be cautious about those references.
 
 You will usually want to include CSS inline via a `<style> ... </style>` section under `<head>`.
 
-For now, a plaintext alternative is required.
+It's best to include a plaintext alternative is required, although HTML-only mail is also supported.
 
 ```scala
 //> using dep "com.mchange::mailutil:0.0.1"
