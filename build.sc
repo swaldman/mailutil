@@ -32,6 +32,7 @@ object mailutil extends RootModule with ScalaModule with PublishModule {
       ivy"com.lihaoyi::os-lib:0.9.1",
       ivy"com.sun.mail:jakarta.mail:${JakartaMailVersion}",
       ivy"com.sun.mail:smtp:${JakartaMailVersion}",
+      ivy"com.mchange::conveniences:0.0.2-SNAPSHOT"
     )
   }
 }

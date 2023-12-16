@@ -4,11 +4,12 @@ import java.util.{Date,Properties}
 import jakarta.mail.*
 import jakarta.mail.internet.*
 import jakarta.mail.{Authenticator, PasswordAuthentication, Session, Transport}
-import java.io.BufferedInputStream
+import java.io.{BufferedInputStream,FileNotFoundException}
 import scala.util.{Try,Failure,Success,Using}
 import scala.jdk.CollectionConverters.*
 import scala.io.Codec
 import scala.collection.immutable
+import com.mchange.conveniences.javautil.loadProperties
 
 object Smtp:
   private def check( strict : Boolean )( addresses : Seq[Address] ) : Seq[Address] =
@@ -61,8 +62,10 @@ object Smtp:
   object Context:
     lazy given TrySmtpContext : Try[Context] = Try( Smtp.Context.Default )
     lazy given Default : Context =
-      val props =
-        (sys.props.get(Prop.SyspropOnly.Properties) orElse sys.env.get(Env.Properties)) match
+      val props = findProperties()
+      this.apply( props, sys.env )
+    def findProperties( explicitSourceIfAny : Option[os.Path] = None ) : Properties =
+        (explicitSourceIfAny.map( _.toString) orElse sys.props.get(Prop.SyspropOnly.Properties) orElse sys.env.get(Env.Properties)) match
           case Some( pathStr ) =>
             val path = os.Path(pathStr)
             val tryProps = Try:
@@ -72,7 +75,7 @@ object Smtp:
                   props.load(is)
                   props
               else
-                System.err.println(s"[SMTP config] No file at path specified by ${Env.Properties}, ${path}. Reverting to system properties only.")
+                System.err.println(s"[SMTP config] No file at $path (perhaps specified by environment variable '${Env.Properties}'). Reverting to system properties only.")
                 System.getProperties
             tryProps match
               case Success( props ) => props
@@ -82,8 +85,16 @@ object Smtp:
                 System.getProperties
           case None =>
             System.getProperties
-      end props
-      this.apply( props, sys.env )
+    def loadPropertiesWithDefaults( explicitSource : os.Path, requirePresent : Boolean = true ) : Properties =
+      val defaults = findProperties(None)
+      if os.exists( explicitSource ) then
+        loadProperties( explicitSource.toIO, Some( defaults ) )
+      else  
+        if !requirePresent then
+          System.err.println(s"[SMTP config] No file at specified $explicitSource. Reverting to default configuration strategy only.")
+          defaults
+        else
+          throw new FileNotFoundException( s"Properties file '${explicitSource}' required, not found." )
     def apply( properties : Properties, environment : Map[String,String]) : Context =
       val propsMap = properties.asScala
       val host = (propsMap.get(Prop.Host) orElse environment.get(Env.Host)).map(_.trim).getOrElse( throw new SmtpInitializationFailed("No SMTP Host Configured") )
