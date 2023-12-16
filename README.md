@@ -161,7 +161,9 @@ Smtp.sendSimplePlaintext( contents, subject = "So exciting!", from = "swaldman@m
 ### Known shortcomings
 
 You can drop into the [Jakarta mail API](https://jakarta.ee/specifications/mail/2.0/apidocs/jakarta.mail/module-summary.html)
-and do anything. But there is no clean API or conveniences for mail other than simple plaintext or HTML / plaintext
+and do anything. 
+
+But there is no clean API or conveniences for mail other than simple plaintext, self-contained HTML, or HTML / plaintext
 alternative. Attachments and embedded resources (like images) are not really supported.
 
 It'd be nice to develop a general, clean Scala datastructure to model mail more generally, and make
