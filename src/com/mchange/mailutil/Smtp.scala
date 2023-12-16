@@ -61,10 +61,8 @@ object Smtp:
     override def getPasswordAuthentication() : PasswordAuthentication = new PasswordAuthentication(user, password)
   object Context:
     lazy given TrySmtpContext : Try[Context] = Try( Smtp.Context.Default )
-    lazy given Default : Context =
-      val props = findProperties()
-      this.apply( props, sys.env )
-    def findProperties( explicitSourceIfAny : Option[os.Path] = None ) : Properties =
+    lazy given Default : Context = this.apply( defaultProperties(), sys.env )
+    private def findProperties( explicitSourceIfAny : Option[os.Path] = None ) : Properties =
         (explicitSourceIfAny.map( _.toString) orElse sys.props.get(Prop.SyspropOnly.Properties) orElse sys.env.get(Env.Properties)) match
           case Some( pathStr ) =>
             val path = os.Path(pathStr)
@@ -85,8 +83,9 @@ object Smtp:
                 System.getProperties
           case None =>
             System.getProperties
+    def defaultProperties() = findProperties(None)
     def loadPropertiesWithDefaults( explicitSource : os.Path, requirePresent : Boolean = true ) : Properties =
-      val defaults = findProperties(None)
+      val defaults = defaultProperties()
       if os.exists( explicitSource ) then
         loadProperties( explicitSource.toIO, Some( defaults ) )
       else  
