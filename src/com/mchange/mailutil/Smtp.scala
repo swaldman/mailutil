@@ -57,6 +57,7 @@ object Smtp:
         case n => throw new SmtpAddressParseFailed(s"Expected to parse one valid SMTP address, ${n} found.")
   case class Address( email : String, displayName : Option[String] = None, codec : Codec = Codec.UTF8):
     lazy val toInternetAddress = new InternetAddress( email, displayName.getOrElse(null), codec.charSet.name() )
+    lazy val rendered = this.toInternetAddress.toString()
   case class Auth( user : String, password : String ) extends Authenticator:
     override def getPasswordAuthentication() : PasswordAuthentication = new PasswordAuthentication(user, password)
   object Context:
