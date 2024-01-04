@@ -52,9 +52,9 @@ object Smtp:
     def parseSingle( fullAddress : String, strict : Boolean = true ) : Address =
       val out = parseCommaSeparated( fullAddress, strict )
       out.size match
-        case 0 => throw new SmtpAddressParseFailed("Expected to parse one valid SMTP address, none found.")
+        case 0 => throw new SmtpAddressParseFailed(s"Expected to parse one valid SMTP address, none found in '${fullAddress}'.")
         case 1 => out.head
-        case n => throw new SmtpAddressParseFailed(s"Expected to parse one valid SMTP address, ${n} found.")
+        case n => throw new SmtpAddressParseFailed(s"Expected to parse one valid SMTP address, ${n} found in '${fullAddress}'.")
   case class Address( email : String, displayName : Option[String] = None, codec : Codec = Codec.UTF8):
     lazy val toInternetAddress = new InternetAddress( email, displayName.getOrElse(null), codec.charSet.name() )
     lazy val rendered = this.toInternetAddress.toString()
