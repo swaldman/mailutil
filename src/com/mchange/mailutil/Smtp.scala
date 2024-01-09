@@ -298,7 +298,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address],
     strict    : Boolean = true
   )( using context : Smtp.Context ) : MimeMessage =
-    _composeSimple("text/plain")(
+    _composeSimple("text/plain; charset=utf-8")(
       plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from, strict),
@@ -319,7 +319,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address],
     strict    : Boolean = true
   )( using context : Smtp.Context ) : Unit =
-    _sendSimple("text/plain")(
+    _sendSimple("text/plain; charset=utf-8")(
       plaintext,
       subject,
       summon[AddressesRep[A]].toAddresses(from, strict),
@@ -344,7 +344,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address],
     strict    : Boolean = true
   )( using context : Smtp.Context ) : MimeMessage =
-    _composeSimple("text/html")(
+    _composeSimple("text/html; charset=utf-8")(
       html,
       subject,
       summon[AddressesRep[A]].toAddresses(from, strict),
@@ -365,7 +365,7 @@ object Smtp:
     replyTo   : E = Seq.empty[Address],
     strict    : Boolean = true
   )( using context : Smtp.Context ) : Unit =
-    _sendSimple("text/html")(
+    _sendSimple("text/html; charset=utf-8")(
       html,
       subject,
       summon[AddressesRep[A]].toAddresses(from, strict),
@@ -393,11 +393,11 @@ object Smtp:
     val msg = new MimeMessage(context.session)
     val htmlAlternative =
       val tmp = new MimeBodyPart()
-      tmp.setContent(html, "text/html")
+      tmp.setContent(html, "text/html; charset=utf-8")
       tmp
     val plaintextAlternative =
       val tmp = new MimeBodyPart()
-      tmp.setContent(plaintext, "text/plain")
+      tmp.setContent(plaintext, "text/plain; charset=utf-8")
       tmp
     // last entry is highest priority!
     val multipart = new MimeMultipart("alternative", plaintextAlternative, htmlAlternative)
