@@ -48,7 +48,11 @@ object Smtp:
   object Address:
     def fromInternetAddress( iaddress : InternetAddress ) : Address = Address( iaddress.getAddress(), Option(iaddress.getPersonal()) )
     def parseCommaSeparated( line : String, strict : Boolean = true ) : Seq[Address] =
-      check(strict)( immutable.ArraySeq.unsafeWrapArray( InternetAddress.parse(line).map( fromInternetAddress ) ) )
+      try
+        check(strict)( immutable.ArraySeq.unsafeWrapArray( InternetAddress.parse(line).map( fromInternetAddress ) ) )
+      catch // note we parse BEFORE we cal check, so the try in check doesn't apply
+        case ae : AddressException =>
+          throw new SmtpAddressParseFailed( ae.getMessage(), ae )
     def parseSingle( fullAddress : String, strict : Boolean = true ) : Address =
       val out = parseCommaSeparated( fullAddress, strict )
       out.size match
