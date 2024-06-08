@@ -13,7 +13,7 @@ object mailutil extends RootModule with ScalaModule with PublishModule {
  }
 
   override def artifactName = "mailutil"
-  override def publishVersion = T{"0.0.4-SNAPSHOT"}
+  override def publishVersion = T{"0.0.4"}
   override def pomSettings    = T{
     PomSettings(
       description = "Utilities for conveniently working with e-mail from Scala",
@@ -32,7 +32,7 @@ object mailutil extends RootModule with ScalaModule with PublishModule {
       ivy"com.lihaoyi::os-lib:0.9.3",
       ivy"com.sun.mail:jakarta.mail:${JakartaMailVersion}",
       ivy"com.sun.mail:smtp:${JakartaMailVersion}",
-      ivy"com.mchange::conveniences:0.0.4-SNAPSHOT"
+      ivy"com.mchange::conveniences:0.0.4"
     )
   }
 }
