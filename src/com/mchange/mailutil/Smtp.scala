@@ -6,6 +6,7 @@ import jakarta.mail.internet.*
 import jakarta.mail.{Authenticator, PasswordAuthentication, Session, Transport}
 import java.io.{BufferedInputStream,FileNotFoundException}
 import scala.util.{Try,Failure,Success,Using}
+import scala.util.control.NonFatal
 import scala.jdk.CollectionConverters.*
 import scala.io.Codec
 import scala.collection.immutable
@@ -62,6 +63,12 @@ object Smtp:
   case class Address( email : String, displayName : Option[String] = None, codec : Codec = Codec.UTF8):
     lazy val toInternetAddress = new InternetAddress( email, displayName.getOrElse(null), codec.charSet.name() )
     lazy val rendered = this.toInternetAddress.toString()
+    lazy val whyInvalid : Option[Throwable] =
+      try
+        this.toInternetAddress.validate()
+        None
+      catch
+        case NonFatal(t) => Some(t)
   case class Auth( user : String, password : String ) extends Authenticator:
     override def getPasswordAuthentication() : PasswordAuthentication = new PasswordAuthentication(user, password)
   object Context:
