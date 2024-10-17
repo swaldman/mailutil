@@ -6,7 +6,7 @@ object mailutil extends RootModule with ScalaModule with PublishModule {
 
   val JakartaMailVersion = "2.0.1"
 
-  override def scalaVersion = "3.3.3"
+  override def scalaVersion = "3.3.4"
 
  def scalacOptions = T {
    super.scalacOptions() ++ Seq(/*"-explain",*/"-deprecation")
