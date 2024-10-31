@@ -13,7 +13,7 @@ object mailutil extends RootModule with ScalaModule with PublishModule {
  }
 
   override def artifactName = "mailutil"
-  override def publishVersion = T{"0.0.5-SNAPSHOT"}
+  override def publishVersion = T{"0.0.5"}
   override def pomSettings    = T{
     PomSettings(
       description = "Utilities for conveniently working with e-mail from Scala",
