@@ -29,7 +29,7 @@ object mailutil extends RootModule with ScalaModule with PublishModule {
 
   override def ivyDeps = T{
     super.ivyDeps() ++ Agg(
-      ivy"com.lihaoyi::os-lib:0.11.2",
+      ivy"com.lihaoyi::os-lib:0.11.3",
       ivy"com.sun.mail:jakarta.mail:${JakartaMailVersion}",
       ivy"com.sun.mail:smtp:${JakartaMailVersion}",
       ivy"com.mchange::conveniences:0.0.5"
